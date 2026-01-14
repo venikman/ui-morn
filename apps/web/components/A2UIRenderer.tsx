@@ -1,6 +1,10 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { A2UISurfaces, SurfaceState } from "../lib/a2ui";
 import { getPath } from "../lib/a2ui";
 
@@ -85,20 +89,21 @@ const renderComponent = (
     }
     case "Card":
       return (
-        <div key={component.id} className="a2ui-card">
-          {children.map((child) =>
-            renderComponent(child, surface, onAction, onUpdateModel, context)
-          )}
-        </div>
+        <Card key={component.id} className="shadow-none">
+          <CardContent className="space-y-3">
+            {children.map((child) =>
+              renderComponent(child, surface, onAction, onUpdateModel, context)
+            )}
+          </CardContent>
+        </Card>
       );
     case "TextField": {
       const bindingPath = component.props?.bindingPath as string | undefined;
       const placeholder = component.props?.placeholder as string | undefined;
       const value = (getPath(surface.dataModel, bindingPath) as string | undefined) ?? "";
       return (
-        <input
+        <Input
           key={component.id}
-          className="a2ui-input"
           placeholder={placeholder}
           value={value}
           onChange={(event) => {
@@ -117,6 +122,7 @@ const renderComponent = (
         <label key={component.id} className="a2ui-checkbox">
           <input
             type="checkbox"
+            className="size-4 accent-primary"
             checked={checked}
             onChange={(event) => {
               if (bindingPath) {
@@ -132,10 +138,10 @@ const renderComponent = (
       const label = component.props?.label as string | undefined;
       const action = component.props?.action as string | undefined;
       return (
-        <button
+        <Button
           key={component.id}
-          className="a2ui-button"
           type="button"
+          size="sm"
           onClick={() => {
             if (action) {
               onAction(surface.surfaceId, action, surface.dataModel);
@@ -143,7 +149,7 @@ const renderComponent = (
           }}
         >
           {label ?? "Action"}
-        </button>
+        </Button>
       );
     }
     case "Tabs": {
@@ -151,14 +157,13 @@ const renderComponent = (
       const bindingPath = component.props?.bindingPath as string | undefined;
       const current = bindingPath ? (getPath(surface.dataModel, bindingPath) as string | undefined) : undefined;
       return (
-        <div key={component.id} className="a2ui-tabs">
+        <ButtonGroup key={component.id}>
           {options.map((option) => (
-            <button
+            <Button
               key={option.value}
               type="button"
-              className={
-                option.value === current ? "a2ui-tab active" : "a2ui-tab"
-              }
+              size="sm"
+              variant={option.value === current ? "secondary" : "outline"}
               onClick={() => {
                 if (bindingPath) {
                   onUpdateModel(surface.surfaceId, bindingPath, option.value);
@@ -166,9 +171,9 @@ const renderComponent = (
               }}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
-        </div>
+        </ButtonGroup>
       );
     }
     case "List": {

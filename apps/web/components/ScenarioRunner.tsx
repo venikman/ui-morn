@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import type { Metrics } from "@ui-morn/shared";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { MarkdownScenario } from "./MarkdownScenario";
 import { A2UIScenario } from "./A2UIScenario";
 import { McpScenario } from "./McpScenario";
@@ -36,14 +38,10 @@ export const ScenarioRunner = () => {
           </p>
         </div>
         <div className="runner-actions">
-          <button
-            className="button ghost"
-            onClick={exportMetrics}
-            disabled={runs.length === 0}
-          >
+          <Button variant="outline" onClick={exportMetrics} disabled={runs.length === 0}>
             Export metrics
-          </button>
-          <span className="muted">Runs logged: {runs.length}</span>
+          </Button>
+          <Badge variant="secondary">Runs logged: {runs.length}</Badge>
         </div>
       </div>
 

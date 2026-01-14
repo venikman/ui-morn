@@ -2,6 +2,8 @@
 
 import React, { useRef, useState } from "react";
 import type { A2UIMessage, Metrics } from "@ui-morn/shared";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { A2UIRenderer } from "./A2UIRenderer";
 import { connectSse } from "../lib/sse";
 import { applyA2uiMessage, updateDataModel } from "../lib/a2ui";
@@ -261,15 +263,15 @@ export const A2UIScenario = ({ onRunComplete }: A2UIScenarioProps) => {
           <h2>A2UI structured workflow</h2>
         </div>
         <div className="scenario-actions">
-          <button className="button" onClick={startRun} disabled={isRunning}>
+          <Button onClick={startRun} disabled={isRunning}>
             Run
-          </button>
-          <button className="button ghost" onClick={dropConnection} disabled={!isRunning}>
+          </Button>
+          <Button variant="outline" onClick={dropConnection} disabled={!isRunning}>
             Drop stream
-          </button>
-          <button className="button ghost" onClick={resume} disabled={!taskId || isRunning}>
+          </Button>
+          <Button variant="outline" onClick={resume} disabled={!taskId || isRunning}>
             Resume
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -288,10 +290,14 @@ export const A2UIScenario = ({ onRunComplete }: A2UIScenarioProps) => {
           </p>
           <LoadingIndicator loading={isSubmitting} label="Submitting response" />
           {submissionError ? (
-            <div className="callout error">{submissionError}</div>
+            <Alert variant="destructive">
+              <AlertDescription>{submissionError}</AlertDescription>
+            </Alert>
           ) : null}
           {responseMessage ? (
-            <div className="callout success">{responseMessage}</div>
+            <Alert>
+              <AlertDescription>{responseMessage}</AlertDescription>
+            </Alert>
           ) : null}
         </div>
       </div>

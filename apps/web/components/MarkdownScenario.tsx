@@ -1,8 +1,14 @@
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
-import { Streamdown } from "streamdown";
 import type { Metrics } from "@ui-morn/shared";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { connectSse } from "../lib/sse";
 import { LoadingIndicator } from "./LoadingIndicator";
 
@@ -195,15 +201,15 @@ export const MarkdownScenario = ({ onRunComplete }: MarkdownScenarioProps) => {
           <h2>Streaming Markdown (Streamdown v2)</h2>
         </div>
         <div className="scenario-actions">
-          <button className="button" onClick={startRun} disabled={isRunning}>
+          <Button onClick={startRun} disabled={isRunning}>
             Run
-          </button>
-          <button className="button ghost" onClick={dropConnection} disabled={!isRunning}>
+          </Button>
+          <Button variant="outline" onClick={dropConnection} disabled={!isRunning}>
             Drop stream
-          </button>
-          <button className="button ghost" onClick={resume} disabled={!canResume}>
+          </Button>
+          <Button variant="outline" onClick={resume} disabled={!canResume}>
             Resume
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -211,7 +217,7 @@ export const MarkdownScenario = ({ onRunComplete }: MarkdownScenarioProps) => {
         <div className="scenario-controls">
           <label>
             Prompt
-            <textarea
+            <Textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               rows={4}
@@ -220,6 +226,7 @@ export const MarkdownScenario = ({ onRunComplete }: MarkdownScenarioProps) => {
           <label className="toggle">
             <input
               type="checkbox"
+              className="size-4 accent-primary"
               checked={malformedEnabled}
               onChange={(event) => setMalformedEnabled(event.target.checked)}
             />
@@ -228,6 +235,7 @@ export const MarkdownScenario = ({ onRunComplete }: MarkdownScenarioProps) => {
           <label className="toggle">
             <input
               type="checkbox"
+              className="size-4 accent-primary"
               checked={repairEnabled}
               onChange={(event) => setRepairEnabled(event.target.checked)}
             />
@@ -241,14 +249,23 @@ export const MarkdownScenario = ({ onRunComplete }: MarkdownScenarioProps) => {
         <div className="scenario-output">
           <LoadingIndicator loading={isRunning} label="Streaming response" />
           <div className="streamdown-panel">
-            <Streamdown
-              mode="streaming"
-              caret="block"
-              parseIncompleteMarkdown={repairEnabled}
-              remend={remendConfig}
-            >
-              {content || "*Awaiting stream...*"}
-            </Streamdown>
+            <div className="space-y-4">
+              <Message from="user">
+                <MessageContent>{prompt}</MessageContent>
+              </Message>
+              <Message from="assistant">
+                <MessageContent>
+                  <MessageResponse
+                    mode="streaming"
+                    caret="block"
+                    parseIncompleteMarkdown={repairEnabled}
+                    remend={remendConfig}
+                  >
+                    {content || "*Awaiting stream...*"}
+                  </MessageResponse>
+                </MessageContent>
+              </Message>
+            </div>
           </div>
         </div>
       </div>

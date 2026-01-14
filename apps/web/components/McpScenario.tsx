@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import type { Metrics } from "@ui-morn/shared";
+import { Button } from "@/components/ui/button";
 import { connectSse } from "../lib/sse";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { ToolApprovalPanel, ToolProposal, ToolResult } from "./ToolApprovalPanel";
@@ -292,15 +293,15 @@ export const McpScenario = ({ onRunComplete }: McpScenarioProps) => {
           <h2>A2A orchestrating MCP tools</h2>
         </div>
         <div className="scenario-actions">
-          <button className="button" onClick={startRun} disabled={isRunning}>
+          <Button onClick={startRun} disabled={isRunning}>
             Run
-          </button>
-          <button className="button ghost" onClick={dropConnection} disabled={!isRunning}>
+          </Button>
+          <Button variant="outline" onClick={dropConnection} disabled={!isRunning}>
             Drop stream
-          </button>
-          <button className="button ghost" onClick={resume} disabled={!taskId || isRunning}>
+          </Button>
+          <Button variant="outline" onClick={resume} disabled={!taskId || isRunning}>
             Resume
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -329,15 +330,15 @@ export const McpScenario = ({ onRunComplete }: McpScenarioProps) => {
             Streamable HTTP resumes with Mcp-Session-Id + Last-Event-ID.
           </p>
           <div className="scenario-actions">
-            <button className="button" onClick={() => startMcpProbe(true)} disabled={mcpRunning}>
+            <Button onClick={() => startMcpProbe(true)} disabled={mcpRunning}>
               Start probe
-            </button>
-            <button className="button ghost" onClick={dropMcp} disabled={!mcpRunning}>
+            </Button>
+            <Button variant="outline" onClick={dropMcp} disabled={!mcpRunning}>
               Drop
-            </button>
-            <button className="button ghost" onClick={resumeMcp} disabled={mcpRunning}>
+            </Button>
+            <Button variant="outline" onClick={resumeMcp} disabled={mcpRunning}>
               Resume
-            </button>
+            </Button>
           </div>
         </div>
         <div className="scenario-controls">

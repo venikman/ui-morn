@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export type ToolProposal = {
   requestId: string;
@@ -35,22 +37,12 @@ export const ToolApprovalPanel = ({
         </div>
         {proposal ? (
           <div className="tool-actions">
-            <button
-              type="button"
-              className="button ghost"
-              onClick={() => onDecision(false)}
-              disabled={disabled}
-            >
+            <Button variant="outline" onClick={() => onDecision(false)} disabled={disabled}>
               Deny
-            </button>
-            <button
-              type="button"
-              className="button"
-              onClick={() => onDecision(true)}
-              disabled={disabled}
-            >
+            </Button>
+            <Button onClick={() => onDecision(true)} disabled={disabled}>
               Approve
-            </button>
+            </Button>
           </div>
         ) : (
           <span className="muted">No pending approvals</span>
@@ -81,9 +73,9 @@ export const ToolApprovalPanel = ({
           results.map((result, index) => (
             <div key={`${result.name}-${index}`} className="tool-result">
               <strong>{result.name}</strong>
-              <span className={result.isError ? "status error" : "status ok"}>
+              <Badge variant={result.isError ? "destructive" : "secondary"}>
                 {result.isError ? "error" : "ok"}
-              </span>
+              </Badge>
               <pre>{result.content.map((entry) => entry.text).join("\n")}</pre>
             </div>
           ))
