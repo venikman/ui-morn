@@ -1,0 +1,12 @@
+**/.git
+**/.next
+**/node_modules
+**/bin
+**/obj
+**/TestResults
+**/.env
+.env
+.env.*
+**/.env.*
+**/dist
+**/coverage

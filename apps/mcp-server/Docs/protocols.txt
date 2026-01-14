@@ -1,0 +1,2 @@
+MCP tools expose JSON Schema input definitions and return content blocks.
+Tool invocation should be gated by explicit user approval for sensitive actions.

@@ -1,0 +1,23 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest",
+        "-f",
+        "apps/web/Dockerfile",
+        "--build-arg",
+        "NEXT_PUBLIC_A2A_BASE_URL=${_A2A_URL}",
+        "--build-arg",
+        "NEXT_PUBLIC_MCP_BASE_URL=${_MCP_URL}",
+        "."
+      ]
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest"
+substitutions:
+  _REGION: us-central1
+  _REPO: ui-morn
+  _IMAGE: web
+  _A2A_URL: https://ui-morn-a2a-abcdef-uc.a.run.app
+  _MCP_URL: https://ui-morn-mcp-abcdef-uc.a.run.app

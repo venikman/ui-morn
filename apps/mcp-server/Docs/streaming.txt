@@ -1,0 +1,2 @@
+Streamable HTTP combines JSON-RPC with SSE responses to support resumable tool output.
+Clients can reconnect using Last-Event-ID and Mcp-Session-Id to recover missed events.

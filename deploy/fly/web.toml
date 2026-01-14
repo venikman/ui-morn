@@ -1,0 +1,21 @@
+app = "ui-morn-web"
+
+[build]
+  dockerfile = "../../apps/web/Dockerfile"
+  context = "../.."
+
+  [build.args]
+    NEXT_PUBLIC_A2A_BASE_URL = "https://ui-morn-a2a.fly.dev"
+    NEXT_PUBLIC_MCP_BASE_URL = "https://ui-morn-mcp.fly.dev"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  HOSTNAME = "0.0.0.0"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  min_machines_running = 0

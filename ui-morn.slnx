@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/a2a-agent-tests/">
+    <Project Path="apps/a2a-agent-tests/A2A.Agent.Tests.csproj" />
+  </Folder>
+  <Folder Name="/apps/a2a-agent/">
+    <Project Path="apps/a2a-agent/A2A.Agent.csproj" />
+  </Folder>
+  <Folder Name="/apps/mcp-server-tests/">
+    <Project Path="apps/mcp-server-tests/Mcp.Server.Tests.csproj" />
+  </Folder>
+  <Folder Name="/apps/mcp-server/">
+    <Project Path="apps/mcp-server/Mcp.Server.csproj" />
+  </Folder>
+</Solution>
