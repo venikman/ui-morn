@@ -43,6 +43,10 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Install lightningcss linux binary
+        if: runner.os == 'Linux'
+        run: npm install --no-save --no-package-lock lightningcss-linux-x64-gnu
+
       - name: Lint
         run: npm run lint
 
