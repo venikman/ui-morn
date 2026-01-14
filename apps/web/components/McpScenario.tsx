@@ -84,7 +84,7 @@ export const McpScenario = ({ onRunComplete }: McpScenarioProps) => {
           status: string;
           parts: Array<{
             text?: string;
-            data?: { mimeType?: string; payload?: any };
+            data?: { mimeType?: string; payload?: unknown };
           }>;
         };
 
@@ -169,7 +169,7 @@ export const McpScenario = ({ onRunComplete }: McpScenarioProps) => {
         const event = JSON.parse(message.data) as {
           sequence: number;
           status: string;
-          parts: Array<{ text?: string; data?: { mimeType?: string; payload?: any } }>;
+          parts: Array<{ text?: string; data?: { mimeType?: string; payload?: unknown } }>;
         };
         setLastEventId(String(event.sequence));
         event.parts.forEach((part) => {

@@ -67,7 +67,8 @@ export const applyA2uiMessage = (
 
   if ("deleteSurface" in message) {
     const { surfaceId } = message.deleteSurface;
-    const { [surfaceId]: _removed, ...rest } = surfaces;
+    const rest = { ...surfaces };
+    delete rest[surfaceId];
     return rest;
   }
 
