@@ -81,4 +81,31 @@ public sealed class OpenRouterClient
 
         return content.GetString();
     }
+
+    public async Task<bool> TryProbeAsync(CancellationToken cancellationToken)
+    {
+        if (!IsConfigured)
+        {
+            return false;
+        }
+
+        var endpoint = $"{_options.BaseUrl.TrimEnd('/')}/models";
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, endpoint);
+        requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+        requestMessage.Headers.Add("X-Title", "Protocol Bakeoff");
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(requestMessage, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException)
+        {
+            return false;
+        }
+        catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
 }

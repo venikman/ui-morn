@@ -5,6 +5,7 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 const string UiCorsPolicy = "ui";
 builder.Services.AddCors(options =>
@@ -53,7 +54,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddSingleton<TaskStore>();
-builder.Services.AddSingleton(CreateOpenRouterOptions(builder.Configuration));
+var openRouterOptions = CreateOpenRouterOptions(builder.Configuration);
+ValidateOpenRouterOptions(openRouterOptions);
+builder.Services.AddSingleton(openRouterOptions);
 builder.Services.AddHttpClient<OpenRouterClient>();
 builder.Services.AddSingleton<ScenarioRunner>();
 builder.Services.AddHttpClient<McpClient>(client =>
@@ -87,6 +90,71 @@ app.MapGet("/.well-known/agent-card.json", () =>
             messageStream = "/v1/message:stream",
         },
     }));
+
+var healthInfoRoute = app.MapGet("/health/info", (OpenRouterOptions options) =>
+    TypedResults.Ok(new
+    {
+        status = "ok",
+        openRouter = new
+        {
+            configured = options.IsConfigured,
+            baseUrl = options.BaseUrl,
+            model = options.Model,
+        },
+    }));
+
+if (healthInfoRoute is RouteHandlerBuilder healthRouteBuilder)
+{
+    healthRouteBuilder.Produces(StatusCodes.Status200OK);
+}
+
+var openRouterHealthRoute = app.MapGet("/health/openrouter",
+    async (HttpContext context) =>
+    {
+        var services = context.RequestServices;
+        var client = services.GetRequiredService<OpenRouterClient>();
+        var options = services.GetRequiredService<OpenRouterOptions>();
+        var configuration = services.GetRequiredService<IConfiguration>();
+
+        if (!IsOpenRouterProbeEnabled(configuration))
+        {
+            await TypedResults.NotFound().ExecuteAsync(context).ConfigureAwait(false);
+            return;
+        }
+
+        if (!options.IsConfigured)
+        {
+            await TypedResults.Problem(
+                    title: "OpenRouter not configured",
+                    detail: "Set OpenRouter:ApiKey or OPENROUTER_API_KEY.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable)
+                .ExecuteAsync(context)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        var ok = await client.TryProbeAsync(context.RequestAborted).ConfigureAwait(false);
+        if (!ok)
+        {
+            await TypedResults.Problem(
+                    title: "OpenRouter probe failed",
+                    detail: "OpenRouter did not respond successfully.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable)
+                .ExecuteAsync(context)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        await TypedResults.Ok(new { status = "ok" }).ExecuteAsync(context).ConfigureAwait(false);
+    });
+
+if (openRouterHealthRoute is RouteHandlerBuilder openRouterHealthRouteBuilder)
+{
+    openRouterHealthRouteBuilder
+        .Produces(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")
+        .Produces(StatusCodes.Status404NotFound);
+}
 
 var sendRoute = app.MapPost("/v1/message:send", async (HttpContext context) =>
     {
@@ -354,6 +422,8 @@ if (subscribeRoute is RouteHandlerBuilder subscribeRouteBuilder)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json");
 }
 
+app.MapDefaultEndpoints();
+
 app.Run();
 
 static int ParseLastEventId(string? value)
@@ -385,6 +455,15 @@ static OpenRouterOptions CreateOpenRouterOptions(IConfiguration configuration)
     options.ApiKey = configuration["OpenRouter:ApiKey"]
         ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
     return options;
+}
+
+static void ValidateOpenRouterOptions(OpenRouterOptions options)
+{
+    if (!options.IsConfigured)
+    {
+        throw new InvalidOperationException(
+            "OpenRouter is not configured. Set OpenRouter:ApiKey or OPENROUTER_API_KEY.");
+    }
 }
 
 static void TryAddKeyVault(ConfigurationManager configuration)
@@ -548,6 +627,13 @@ static bool TryHandleUserAction(A2ARequestMessage message, out UserActionPayload
     payload = null;
     error = null;
     return false;
+}
+
+static bool IsOpenRouterProbeEnabled(IConfiguration configuration)
+{
+    var value = configuration["OpenRouter:ProbeEnabled"]
+        ?? Environment.GetEnvironmentVariable("OPENROUTER_PROBE_ENABLED");
+    return bool.TryParse(value, out var enabled) && enabled;
 }
 
 static bool TryValidateUserAction(UserActionPayload payload, out string detail)

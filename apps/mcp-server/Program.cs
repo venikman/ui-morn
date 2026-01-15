@@ -4,6 +4,7 @@ using Mcp.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 const string UiCorsPolicy = "ui";
 builder.Services.AddCors(options =>
@@ -113,6 +114,8 @@ app.MapPost("/mcp", async (
     .Produces<JsonRpcResponse>(StatusCodes.Status200OK)
     .Produces<JsonRpcResponse>(StatusCodes.Status400BadRequest)
     .Produces<JsonRpcResponse>(StatusCodes.Status404NotFound);
+
+app.MapDefaultEndpoints();
 
 app.Run();
 

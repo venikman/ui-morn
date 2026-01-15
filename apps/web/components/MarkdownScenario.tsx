@@ -7,7 +7,16 @@ import {
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message";
+import { FlowDiagram } from "@/components/FlowDiagram";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { connectSse } from "../lib/sse";
 import { LoadingIndicator } from "./LoadingIndicator";
@@ -25,6 +34,27 @@ const createMetrics = (scenario: string): Metrics => ({
   toolApprovals: 0,
   errors: 0,
 });
+
+const markdownFlowSteps = [
+  {
+    title: "Web UI",
+    detail: "Prompt input and Streamdown renderer.",
+  },
+  {
+    title: "A2A Agent",
+    tag: "POST /v1/message:stream",
+    detail: "SSE task updates stream back.",
+  },
+  {
+    title: "OpenRouter",
+    tag: "LLM",
+    detail: "Markdown response generation.",
+  },
+  {
+    title: "Streamdown UI",
+    detail: "Chunks render with remend repair.",
+  },
+];
 
 type MarkdownScenarioProps = {
   onRunComplete: (metrics: Metrics) => void;
@@ -194,13 +224,18 @@ export const MarkdownScenario = ({ onRunComplete }: MarkdownScenarioProps) => {
   };
 
   return (
-    <section className="scenario">
-      <header>
-        <div>
-          <p className="eyebrow">Scenario A</p>
-          <h2>Streaming Markdown (Streamdown v2)</h2>
+    <Card>
+      <CardHeader className="gap-4">
+        <div className="space-y-1">
+          <p
+            className="text-xs uppercase tracking-[0.2em]"
+            style={{ color: "var(--accent-2)" }}
+          >
+            Scenario A
+          </p>
+          <CardTitle className="text-xl">Streaming Markdown (Streamdown v2)</CardTitle>
         </div>
-        <div className="scenario-actions">
+        <CardAction className="flex flex-wrap gap-2">
           <Button onClick={startRun} disabled={isRunning}>
             Run
           </Button>
@@ -210,73 +245,83 @@ export const MarkdownScenario = ({ onRunComplete }: MarkdownScenarioProps) => {
           <Button variant="outline" onClick={resume} disabled={!canResume}>
             Resume
           </Button>
-        </div>
-      </header>
+        </CardAction>
+      </CardHeader>
 
-      <div className="scenario-body">
-        <div className="scenario-controls">
-          <label>
-            Prompt
-            <Textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              rows={4}
-            />
-          </label>
-          <label className="toggle">
-            <input
-              type="checkbox"
-              className="size-4 accent-primary"
-              checked={malformedEnabled}
-              onChange={(event) => setMalformedEnabled(event.target.checked)}
-            />
-            Inject malformed Markdown
-          </label>
-          <label className="toggle">
-            <input
-              type="checkbox"
-              className="size-4 accent-primary"
-              checked={repairEnabled}
-              onChange={(event) => setRepairEnabled(event.target.checked)}
-            />
-            Remend repair enabled
-          </label>
-          <p className="muted">
-            Streamdown uses rehype-harden by default for a security-first baseline.
-          </p>
-        </div>
+      <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Prompt</p>
+              <Textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                rows={4}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                style={{ accentColor: "var(--primary)" }}
+                checked={malformedEnabled}
+                onChange={(event) => setMalformedEnabled(event.target.checked)}
+              />
+              Inject malformed Markdown
+            </label>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                style={{ accentColor: "var(--primary)" }}
+                checked={repairEnabled}
+                onChange={(event) => setRepairEnabled(event.target.checked)}
+              />
+              Remend repair enabled
+            </label>
+            <p className="text-sm text-muted-foreground">
+              Streamdown uses rehype-harden by default for a security-first baseline.
+            </p>
+          </div>
 
-        <div className="scenario-output">
-          <LoadingIndicator loading={isRunning} label="Streaming response" />
-          <div className="streamdown-panel">
-            <div className="space-y-4">
-              <Message from="user">
-                <MessageContent>{prompt}</MessageContent>
-              </Message>
-              <Message from="assistant">
-                <MessageContent>
-                  <MessageResponse
-                    mode="streaming"
-                    caret="block"
-                    parseIncompleteMarkdown={repairEnabled}
-                    remend={remendConfig}
-                  >
-                    {content || "*Awaiting stream...*"}
-                  </MessageResponse>
-                </MessageContent>
-              </Message>
+          <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
+            <LoadingIndicator loading={isRunning} label="Streaming response" />
+            <div className="min-h-[180px] rounded-xl border border-dashed bg-background/70 p-4">
+              <div className="space-y-4">
+                <Message from="user">
+                  <MessageContent>{prompt}</MessageContent>
+                </Message>
+                <Message from="assistant">
+                  <MessageContent>
+                    <MessageResponse
+                      mode="streaming"
+                      caret="block"
+                      parseIncompleteMarkdown={repairEnabled}
+                      remend={remendConfig}
+                    >
+                      {content || "*Awaiting stream...*"}
+                    </MessageResponse>
+                  </MessageContent>
+                </Message>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <footer className="scenario-footer">
-        <div className="metrics">
-          <span>TTFT: {metrics?.ttftSeconds?.toFixed(2) ?? "--"}s</span>
-          <span>Bytes: {metrics?.totalBytes ?? 0}</span>
-          <span>Retries: {metrics?.retries ?? 0}</span>
+        <div className="rounded-xl border bg-muted/30 p-4">
+          <FlowDiagram
+            title="Streaming markdown"
+            subtitle="Real LLM via OpenRouter"
+            steps={markdownFlowSteps}
+          />
         </div>
-      </footer>
-    </section>
+      </CardContent>
+
+      <CardFooter className="flex flex-wrap gap-4 border-t pt-4 text-sm text-muted-foreground">
+        <span>TTFT: {metrics?.ttftSeconds?.toFixed(2) ?? "--"}s</span>
+        <span>Bytes: {metrics?.totalBytes ?? 0}</span>
+        <span>Retries: {metrics?.retries ?? 0}</span>
+      </CardFooter>
+    </Card>
   );
 };

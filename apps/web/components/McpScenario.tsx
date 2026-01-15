@@ -2,7 +2,17 @@
 
 import React, { useRef, useState } from "react";
 import type { Metrics } from "@ui-morn/shared";
+import { FlowDiagram } from "@/components/FlowDiagram";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { connectSse } from "../lib/sse";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { ToolApprovalPanel, ToolProposal, ToolResult } from "./ToolApprovalPanel";
@@ -21,6 +31,51 @@ const createMetrics = (scenario: string): Metrics => ({
   toolApprovals: 0,
   errors: 0,
 });
+
+const mcpFlowSteps = [
+  {
+    title: "Web UI",
+    detail: "Starts orchestration request.",
+  },
+  {
+    title: "A2A Agent",
+    tag: "POST /v1/message:stream",
+    detail: "Creates tool plan and streams proposal.",
+  },
+  {
+    title: "Approval Gate",
+    tag: "POST /v1/message:send",
+    detail: "User approves tool plan.",
+  },
+  {
+    title: "MCP Server",
+    detail: "Executes tools via tools/call.",
+  },
+  {
+    title: "UI Results",
+    detail: "Tool results stream into panel.",
+  },
+];
+
+const mcpResumeSteps = [
+  {
+    title: "Web UI",
+    detail: "Starts MCP SSE request.",
+  },
+  {
+    title: "MCP Server",
+    tag: "POST /mcp",
+    detail: "Returns Mcp-Session-Id + events.",
+  },
+  {
+    title: "Resume Request",
+    detail: "Last-Event-ID + Mcp-Session-Id headers.",
+  },
+  {
+    title: "UI Log",
+    detail: "Continues streaming events.",
+  },
+];
 
 type McpScenarioProps = {
   onRunComplete: (metrics: Metrics) => void;
@@ -285,14 +340,23 @@ export const McpScenario = ({ onRunComplete }: McpScenarioProps) => {
     await startMcpProbe(false);
   };
 
+  const logContent = log.length === 0 ? "No log entries yet." : log.join("\n");
+  const mcpLogContent =
+    mcpLog.length === 0 ? "No MCP events yet." : mcpLog.join("\n");
+
   return (
-    <section className="scenario">
-      <header>
-        <div>
-          <p className="eyebrow">Scenario C</p>
-          <h2>A2A orchestrating MCP tools</h2>
+    <Card>
+      <CardHeader className="gap-4">
+        <div className="space-y-1">
+          <p
+            className="text-xs uppercase tracking-[0.2em]"
+            style={{ color: "var(--accent-2)" }}
+          >
+            Scenario C
+          </p>
+          <CardTitle className="text-xl">A2A orchestrating MCP tools</CardTitle>
         </div>
-        <div className="scenario-actions">
+        <CardAction className="flex flex-wrap gap-2">
           <Button onClick={startRun} disabled={isRunning}>
             Run
           </Button>
@@ -302,53 +366,77 @@ export const McpScenario = ({ onRunComplete }: McpScenarioProps) => {
           <Button variant="outline" onClick={resume} disabled={!taskId || isRunning}>
             Resume
           </Button>
-        </div>
-      </header>
+        </CardAction>
+      </CardHeader>
 
-      <div className="scenario-body">
-        <div className="scenario-output">
-          <LoadingIndicator loading={isRunning} label="Orchestrating tools" />
-          <ToolApprovalPanel
-            proposal={proposal}
-            results={results}
-            onDecision={submitDecision}
-            disabled={!proposal}
+      <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
+        <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
+              <LoadingIndicator loading={isRunning} label="Orchestrating tools" />
+              <ToolApprovalPanel
+                proposal={proposal}
+                results={results}
+                onDecision={submitDecision}
+                disabled={!proposal}
+              />
+            </div>
+            <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
+              <p className="text-sm text-muted-foreground">Audit log</p>
+              <ScrollArea className="h-40 rounded-lg border bg-background/70">
+                <pre className="p-3 text-xs leading-relaxed whitespace-pre-wrap font-mono text-foreground">
+                  {logContent}
+                </pre>
+              </ScrollArea>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
+              <div className="space-y-1">
+              <h3 className="text-base font-semibold">MCP resume probe</h3>
+                <p className="text-sm text-muted-foreground">
+                  Streamable HTTP resumes with Mcp-Session-Id + Last-Event-ID.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => startMcpProbe(true)} disabled={mcpRunning}>
+                  Start probe
+                </Button>
+                <Button variant="outline" onClick={dropMcp} disabled={!mcpRunning}>
+                  Drop
+                </Button>
+                <Button variant="outline" onClick={resumeMcp} disabled={mcpRunning}>
+                  Resume
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
+              <ScrollArea className="h-40 rounded-lg border bg-background/70">
+                <pre className="p-3 text-xs leading-relaxed whitespace-pre-wrap font-mono text-foreground">
+                  {mcpLogContent}
+                </pre>
+              </ScrollArea>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p>Session: {mcpSessionId ?? "--"}</p>
+                <p>Last event: {mcpLastEventId ?? "--"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6 rounded-xl border bg-muted/30 p-4">
+          <FlowDiagram title="MCP orchestration" subtitle="Tool approvals + execution" steps={mcpFlowSteps} />
+          <Separator />
+          <FlowDiagram
+            title="MCP resume probe"
+            subtitle="Session + Last-Event-ID"
+            steps={mcpResumeSteps}
           />
         </div>
-        <div className="scenario-controls">
-          <p className="muted">Audit log</p>
-          <div className="log">
-            {log.length === 0 ? "No log entries yet." : log.join("\n")}
-          </div>
-        </div>
-      </div>
-
-      <div className="scenario-body">
-        <div className="scenario-output">
-          <h3>Scenario D: MCP resume probe</h3>
-          <p className="muted">
-            Streamable HTTP resumes with Mcp-Session-Id + Last-Event-ID.
-          </p>
-          <div className="scenario-actions">
-            <Button onClick={() => startMcpProbe(true)} disabled={mcpRunning}>
-              Start probe
-            </Button>
-            <Button variant="outline" onClick={dropMcp} disabled={!mcpRunning}>
-              Drop
-            </Button>
-            <Button variant="outline" onClick={resumeMcp} disabled={mcpRunning}>
-              Resume
-            </Button>
-          </div>
-        </div>
-        <div className="scenario-controls">
-          <div className="log">
-            {mcpLog.length === 0 ? "No MCP events yet." : mcpLog.join("\n")}
-          </div>
-          <p className="muted">Session: {mcpSessionId ?? "--"}</p>
-          <p className="muted">Last event: {mcpLastEventId ?? "--"}</p>
-        </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 };
