@@ -52,3 +52,28 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  deploy-fly:
+    needs: [dotnet-tests, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://ui-morn-web.fly.dev
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@v1
+
+      - name: Deploy A2A
+        run: flyctl deploy -c deploy/fly/a2a.toml --remote-only
+
+      - name: Deploy MCP
+        run: flyctl deploy -c deploy/fly/mcp.toml --remote-only
+
+      - name: Deploy Web
+        run: flyctl deploy -c deploy/fly/web.toml --remote-only
