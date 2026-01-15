@@ -1,9 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+COPY apps/service-defaults/UiMorn.ServiceDefaults.csproj apps/service-defaults/
 COPY apps/a2a-agent/A2A.Agent.csproj apps/a2a-agent/
 RUN dotnet restore apps/a2a-agent/A2A.Agent.csproj
 
+COPY apps/service-defaults/ apps/service-defaults/
 COPY apps/a2a-agent/ apps/a2a-agent/
 RUN dotnet publish apps/a2a-agent/A2A.Agent.csproj -c Release -o /app/publish /p:UseAppHost=false
 
