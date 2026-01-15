@@ -69,6 +69,11 @@ jobs:
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@v1
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
       - name: Deploy A2A
         run: flyctl deploy -c deploy/fly/a2a.toml --remote-only
 
@@ -79,51 +84,4 @@ jobs:
         run: flyctl deploy -c deploy/fly/web.toml --remote-only
 
       - name: Smoke checks
-        run: |
-          set -euo pipefail
-
-          read_app() {
-            local path="$1"
-            local app
-            app=$(grep -E '^app\s*=' -m1 "$path" | sed -E 's/.*"([^"]+)".*/\1/')
-            if [ -z "$app" ]; then
-              echo "Unable to read app name from ${path}" >&2
-              exit 1
-            fi
-            echo "$app"
-          }
-
-          a2a_app="$(read_app deploy/fly/a2a.toml)"
-          mcp_app="$(read_app deploy/fly/mcp.toml)"
-          web_app="$(read_app deploy/fly/web.toml)"
-
-          a2a_url="https://${a2a_app}.fly.dev/.well-known/agent-card.json"
-          mcp_url="https://${mcp_app}.fly.dev/mcp"
-          web_url="https://${web_app}.fly.dev"
-
-          rpc='{"jsonrpc":"2.0","id":"smoke","method":"tools/list","params":{}}'
-
-          wait_for() {
-            local name="$1"
-            shift
-            local attempts=30
-            local delay=5
-            local i=1
-            while true; do
-              echo "Checking ${name} (attempt ${i}/${attempts})..."
-              if "$@" >/dev/null; then
-                echo "${name} ok"
-                return 0
-              fi
-              if [ "${i}" -ge "${attempts}" ]; then
-                echo "${name} failed after ${attempts} attempts" >&2
-                return 1
-              fi
-              i=$((i + 1))
-              sleep "${delay}"
-            done
-          }
-
-          wait_for "A2A" curl -fsS --max-time 15 "${a2a_url}"
-          wait_for "MCP" curl -fsS --max-time 15 -X POST -H "Content-Type: application/json" -d "${rpc}" "${mcp_url}"
-          wait_for "Web" curl -fsS --max-time 15 "${web_url}"
+        run: bun scripts/smoke-check.ts
