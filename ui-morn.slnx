@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/apps/" />
+  <Folder Name="/apps/app-host/">
+    <Project Path="apps/app-host/UiMorn.AppHost.csproj" />
+  </Folder>
   <Folder Name="/apps/a2a-agent-tests/">
     <Project Path="apps/a2a-agent-tests/A2A.Agent.Tests.csproj" />
   </Folder>
@@ -11,5 +14,8 @@
   </Folder>
   <Folder Name="/apps/mcp-server/">
     <Project Path="apps/mcp-server/Mcp.Server.csproj" />
+  </Folder>
+  <Folder Name="/apps/service-defaults/">
+    <Project Path="apps/service-defaults/UiMorn.ServiceDefaults.csproj" />
   </Folder>
 </Solution>

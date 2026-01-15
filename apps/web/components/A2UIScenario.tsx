@@ -4,6 +4,14 @@ import React, { useRef, useState } from "react";
 import type { A2UIMessage, Metrics } from "@ui-morn/shared";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FlowDiagram } from "@/components/FlowDiagram";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { A2UIRenderer } from "./A2UIRenderer";
 import { connectSse } from "../lib/sse";
 import { applyA2uiMessage, updateDataModel } from "../lib/a2ui";
@@ -25,6 +33,27 @@ const createMetrics = (scenario: string): Metrics => ({
   toolApprovals: 0,
   errors: 0,
 });
+
+const a2uiFlowSteps = [
+  {
+    title: "Web UI",
+    detail: "Requests A2UI stream with extension header.",
+  },
+  {
+    title: "A2A Agent",
+    tag: "POST /v1/message:stream",
+    detail: "Surface update + beginRendering.",
+  },
+  {
+    title: "A2UI Renderer",
+    detail: "Renders structured form + data model.",
+  },
+  {
+    title: "User Action",
+    tag: "POST /v1/message:send",
+    detail: "submit_form payload returns confirmation.",
+  },
+];
 
 type A2UIScenarioProps = {
   onRunComplete: (metrics: Metrics) => void;
@@ -256,13 +285,18 @@ export const A2UIScenario = ({ onRunComplete }: A2UIScenarioProps) => {
   };
 
   return (
-    <section className="scenario">
-      <header>
-        <div>
-          <p className="eyebrow">Scenario B</p>
-          <h2>A2UI structured workflow</h2>
+    <Card>
+      <CardHeader className="gap-4">
+        <div className="space-y-1">
+          <p
+            className="text-xs uppercase tracking-[0.2em]"
+            style={{ color: "var(--accent-2)" }}
+          >
+            Scenario B
+          </p>
+          <CardTitle className="text-xl">A2UI structured workflow</CardTitle>
         </div>
-        <div className="scenario-actions">
+        <CardAction className="flex flex-wrap gap-2">
           <Button onClick={startRun} disabled={isRunning}>
             Run
           </Button>
@@ -272,35 +306,41 @@ export const A2UIScenario = ({ onRunComplete }: A2UIScenarioProps) => {
           <Button variant="outline" onClick={resume} disabled={!taskId || isRunning}>
             Resume
           </Button>
-        </div>
-      </header>
+        </CardAction>
+      </CardHeader>
 
-      <div className="scenario-body">
-        <div className="scenario-output">
-          <LoadingIndicator loading={isRunning} label="Rendering surface" />
-          <A2UIRenderer
-            surfaces={surfaces}
-            onAction={handleAction}
-            onUpdateModel={handleUpdateModel}
-          />
+      <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
+            <LoadingIndicator loading={isRunning} label="Rendering surface" />
+            <A2UIRenderer
+              surfaces={surfaces}
+              onAction={handleAction}
+              onUpdateModel={handleUpdateModel}
+            />
+          </div>
+          <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
+            <p className="text-sm text-muted-foreground">
+              A2UI renders after beginRendering and sends a userAction on confirm.
+            </p>
+            <LoadingIndicator loading={isSubmitting} label="Submitting response" />
+            {submissionError ? (
+              <Alert variant="destructive">
+                <AlertDescription>{submissionError}</AlertDescription>
+              </Alert>
+            ) : null}
+            {responseMessage ? (
+              <Alert>
+                <AlertDescription>{responseMessage}</AlertDescription>
+              </Alert>
+            ) : null}
+          </div>
         </div>
-        <div className="scenario-controls">
-          <p className="muted">
-            A2UI renders after beginRendering and sends a userAction on confirm.
-          </p>
-          <LoadingIndicator loading={isSubmitting} label="Submitting response" />
-          {submissionError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{submissionError}</AlertDescription>
-            </Alert>
-          ) : null}
-          {responseMessage ? (
-            <Alert>
-              <AlertDescription>{responseMessage}</AlertDescription>
-            </Alert>
-          ) : null}
+
+        <div className="rounded-xl border bg-muted/30 p-4">
+          <FlowDiagram title="A2UI workflow" subtitle="Structured UI loop" steps={a2uiFlowSteps} />
         </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 };

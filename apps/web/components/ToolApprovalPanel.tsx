@@ -1,8 +1,23 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Confirmation,
+  ConfirmationAction,
+  ConfirmationActions,
+  ConfirmationRequest,
+  ConfirmationTitle,
+} from "@/components/ai-elements/confirmation";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
+import { Separator } from "@/components/ui/separator";
+import type { ToolUIPart } from "ai";
 
 export type ToolProposal = {
   requestId: string;
@@ -28,57 +43,106 @@ export const ToolApprovalPanel = ({
   onDecision,
   disabled,
 }: ToolApprovalPanelProps) => {
+  const toToolType = (name: string) => `tool-${name}` as ToolUIPart["type"];
+  const approvalState: ToolUIPart["state"] = "approval-requested";
+
   return (
-    <div className="tool-panel">
-      <div className="tool-panel-header">
-        <div>
-          <p className="eyebrow">Human-in-the-loop gate</p>
-          <h3>Tool approvals</h3>
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p
+            className="text-xs uppercase tracking-[0.2em]"
+            style={{ color: "var(--accent-2)" }}
+          >
+            Human-in-the-loop gate
+          </p>
+          <h3 className="text-lg font-semibold">Tool approvals</h3>
         </div>
-        {proposal ? (
-          <div className="tool-actions">
-            <Button variant="outline" onClick={() => onDecision(false)} disabled={disabled}>
-              Deny
-            </Button>
-            <Button onClick={() => onDecision(true)} disabled={disabled}>
-              Approve
-            </Button>
-          </div>
-        ) : (
-          <span className="muted">No pending approvals</span>
-        )}
+        <span className="text-xs text-muted-foreground">
+          {proposal ? "Awaiting approval" : "Idle"}
+        </span>
       </div>
 
       {proposal ? (
-        <div className="tool-proposal">
-          <p className="label">Proposed tool plan</p>
-          <ul>
-            {proposal.tools.map((tool) => (
-              <li key={tool.name}>
-                <span>{tool.name}</span>
-                <code>{JSON.stringify(tool.arguments)}</code>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Confirmation approval={{ id: proposal.requestId }} state={approvalState}>
+          <ConfirmationTitle className="font-medium text-foreground text-sm">
+            Approval requested
+          </ConfirmationTitle>
+          <ConfirmationRequest>
+            <p className="text-sm text-muted-foreground">
+              Review the proposed tool plan before continuing.
+            </p>
+          </ConfirmationRequest>
+          <ConfirmationActions>
+            <ConfirmationAction
+              variant="outline"
+              onClick={() => onDecision(false)}
+              disabled={disabled}
+            >
+              Deny
+            </ConfirmationAction>
+            <ConfirmationAction onClick={() => onDecision(true)} disabled={disabled}>
+              Approve
+            </ConfirmationAction>
+          </ConfirmationActions>
+        </Confirmation>
       ) : (
-        <div className="tool-proposal empty">Waiting for tool proposal...</div>
+        <Alert>
+          <AlertTitle>No pending approvals</AlertTitle>
+          <AlertDescription>Waiting for tool proposal...</AlertDescription>
+        </Alert>
       )}
 
-      <div className="tool-results">
-        <p className="label">Tool results</p>
+      {proposal ? (
+        <div className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            Proposed tool plan
+          </p>
+          {proposal.tools.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No tools in proposal.</p>
+          ) : (
+            proposal.tools.map((tool) => (
+              <Tool key={tool.name} defaultOpen className="mb-0">
+                <ToolHeader
+                  title={tool.name}
+                  type={toToolType(tool.name)}
+                  state={approvalState}
+                />
+                <ToolContent>
+                  <ToolInput input={(tool.arguments ?? {}) as ToolUIPart["input"]} />
+                </ToolContent>
+              </Tool>
+            ))
+          )}
+        </div>
+      ) : null}
+
+      <Separator />
+
+      <div className="space-y-3">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          Tool results
+        </p>
         {results.length === 0 ? (
-          <p className="muted">No tool results yet.</p>
+          <p className="text-sm text-muted-foreground">No tool results yet.</p>
         ) : (
-          results.map((result, index) => (
-            <div key={`${result.name}-${index}`} className="tool-result">
-              <strong>{result.name}</strong>
-              <Badge variant={result.isError ? "destructive" : "secondary"}>
-                {result.isError ? "error" : "ok"}
-              </Badge>
-              <pre>{result.content.map((entry) => entry.text).join("\n")}</pre>
-            </div>
-          ))
+          results.map((result, index) => {
+            const output = result.content.map((entry) => entry.text).join("\n");
+            const state: ToolUIPart["state"] = result.isError
+              ? "output-error"
+              : "output-available";
+            return (
+              <Tool key={`${result.name}-${index}`} defaultOpen className="mb-0">
+                <ToolHeader title={result.name} type={toToolType(result.name)} state={state} />
+                <ToolContent>
+                  <ToolOutput
+                    output={result.isError ? undefined : output}
+                    errorText={result.isError ? output : undefined}
+                  />
+                </ToolContent>
+              </Tool>
+            );
+          })
         )}
       </div>
     </div>

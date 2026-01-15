@@ -31,11 +31,16 @@ type ComponentNode = {
 
 export const A2UIRenderer = ({ surfaces, onAction, onUpdateModel }: RendererProps) => {
   return (
-    <div className="a2ui-surfaces">
+    <div className="space-y-4">
       {Object.values(surfaces).map((surface) => (
-        <div key={surface.surfaceId} className="a2ui-surface">
+        <div
+          key={surface.surfaceId}
+          className="rounded-xl border bg-background/70 p-4 shadow-sm"
+        >
           {!surface.ready ? (
-            <div className="a2ui-placeholder">Waiting for beginRendering...</div>
+            <div className="text-sm text-muted-foreground">
+              Waiting for beginRendering...
+            </div>
           ) : (
             renderComponent("root", surface, onAction, onUpdateModel, {})
           )}
@@ -62,7 +67,7 @@ const renderComponent = (
   switch (component.type) {
     case "Row":
       return (
-        <div key={component.id} className="a2ui-row">
+        <div key={component.id} className="flex flex-wrap items-center gap-3">
           {children.map((child) =>
             renderComponent(child, surface, onAction, onUpdateModel, context)
           )}
@@ -70,7 +75,7 @@ const renderComponent = (
       );
     case "Column":
       return (
-        <div key={component.id} className="a2ui-column">
+        <div key={component.id} className="flex flex-col gap-3">
           {children.map((child) =>
             renderComponent(child, surface, onAction, onUpdateModel, context)
           )}
@@ -80,7 +85,10 @@ const renderComponent = (
       const text = (component.props?.text as string | undefined) ?? "";
       const tone = (component.props?.tone as string | undefined) ?? "body";
       const resolved = resolveText(text, context);
-      const className = tone === "headline" ? "a2ui-text headline" : "a2ui-text";
+      const className =
+        tone === "headline"
+          ? "text-lg font-[var(--font-display)] font-semibold"
+          : "text-sm";
       return (
         <div key={component.id} className={className}>
           {resolved}
@@ -89,7 +97,7 @@ const renderComponent = (
     }
     case "Card":
       return (
-        <Card key={component.id} className="shadow-none">
+        <Card key={component.id} className="border-dashed bg-background/80 shadow-none">
           <CardContent className="space-y-3">
             {children.map((child) =>
               renderComponent(child, surface, onAction, onUpdateModel, context)
@@ -119,10 +127,11 @@ const renderComponent = (
       const label = component.props?.label as string | undefined;
       const checked = Boolean(getPath(surface.dataModel, bindingPath));
       return (
-        <label key={component.id} className="a2ui-checkbox">
+        <label key={component.id} className="flex items-center gap-2 text-sm font-medium">
           <input
             type="checkbox"
-            className="size-4 accent-primary"
+            className="h-4 w-4"
+            style={{ accentColor: "var(--primary)" }}
             checked={checked}
             onChange={(event) => {
               if (bindingPath) {
@@ -182,9 +191,9 @@ const renderComponent = (
       const value = (getPath(surface.dataModel, path) as Record<string, unknown> | undefined) ?? {};
       const items = Array.isArray(value.items) ? value.items : [];
       return (
-        <div key={component.id} className="a2ui-list">
+        <div key={component.id} className="space-y-2">
           {items.map((item, index) => (
-            <div key={`${component.id}-${index}`} className="a2ui-list-item">
+            <div key={`${component.id}-${index}`} className="rounded-lg border bg-muted/40 p-2 text-sm">
               {templateId
                 ? renderComponent(templateId, surface, onAction, onUpdateModel, { item })
                 : JSON.stringify(item)}
@@ -200,8 +209,13 @@ const renderComponent = (
         return null;
       }
       return (
-        <div key={component.id} className="a2ui-modal">
-          <div className="a2ui-modal-content">
+        <div
+          key={component.id}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-lg rounded-xl border bg-card p-6 shadow-xl">
             {children.map((child) =>
               renderComponent(child, surface, onAction, onUpdateModel, context)
             )}
@@ -211,7 +225,7 @@ const renderComponent = (
     }
     default:
       return (
-        <div key={component.id} className="a2ui-unknown">
+        <div key={component.id} className="text-sm text-muted-foreground">
           Unsupported component: {component.type}
         </div>
       );

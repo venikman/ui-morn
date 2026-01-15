@@ -65,9 +65,11 @@ public sealed class ScenarioRunner
         var includeMalformed = message.Metadata?.TryGetValue("malformed", out var malformedElement) == true
             && malformedElement.ValueKind == JsonValueKind.True;
 
-        var markdown = includeMalformed
-            ? BuildMarkdown(prompt, includeMalformed)
-            : await GetMarkdownAsync(prompt, cancellationToken).ConfigureAwait(false);
+        var markdown = await GetMarkdownAsync(prompt, cancellationToken).ConfigureAwait(false);
+        if (includeMalformed)
+        {
+            markdown = MakeMalformed(markdown);
+        }
         foreach (var chunk in SplitChunks(markdown, 48))
         {
             task.AddEvent("working", new[] { new A2APart { Text = chunk } });
@@ -79,39 +81,29 @@ public sealed class ScenarioRunner
 
     private async Task<string> GetMarkdownAsync(string prompt, CancellationToken cancellationToken)
     {
-        if (_openRouterClient.IsConfigured)
+        if (!_openRouterClient.IsConfigured)
         {
-            var response = await _openRouterClient.TryGetMarkdownAsync(prompt, cancellationToken).ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(response))
-            {
-                return response;
-            }
+            throw new InvalidOperationException(
+                "OpenRouter is not configured. Set OpenRouter:ApiKey or OPENROUTER_API_KEY.");
         }
 
-        return BuildMarkdown(prompt, malformed: false);
+        var response = await _openRouterClient.TryGetMarkdownAsync(prompt, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(response))
+        {
+            throw new InvalidOperationException("OpenRouter response did not include Markdown content.");
+        }
+
+        return response;
     }
 
-    private static string BuildMarkdown(string prompt, bool malformed)
+    private static string MakeMalformed(string markdown)
     {
-        var summary = "## Summary\n" +
-                      $"- Key request: {prompt.Trim()}\n" +
-                      "- Distilled into 2 themes: clarity and action\n" +
-                      "- Primary risk: ambiguity without structure\n";
-
-        var actions = "\n## Action List\n" +
-                      "1. Capture the three most important points\n" +
-                      "2. Draft a short plan with owners\n" +
-                      "3. Confirm next check-in date\n";
-
-        if (!malformed)
+        if (string.IsNullOrWhiteSpace(markdown))
         {
-            return summary + actions;
+            return "**broken markdown";
         }
 
-        return summary + "\n## Action List\n" +
-               "1. Capture the three most important points\n" +
-               "2. Draft a short plan with **missing close\n" +
-               "3. Confirm next check-in date\n";
+        return $"{markdown}\n\n2. Draft a short plan with **missing close";
     }
 
     private async Task RunA2UiAsync(TaskState task, A2ARequestMessage message, CancellationToken cancellationToken)
