@@ -69,6 +69,11 @@ jobs:
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@v1
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
       - name: Deploy A2A
         run: flyctl deploy -c deploy/fly/a2a.toml --remote-only
 
@@ -77,3 +82,6 @@ jobs:
 
       - name: Deploy Web
         run: flyctl deploy -c deploy/fly/web.toml --remote-only
+
+      - name: Smoke checks
+        run: bun scripts/smoke-check.ts
